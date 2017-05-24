@@ -1,0 +1,178 @@
+class Cell extends React.Component{
+  render(){ 
+    var id = this.props.id;
+    if (this.props.state == 1)
+      return(
+        <div 
+          className='cell alive' 
+          id={id} 
+          onClick={()=>{this.props.updateCells(id)}} />
+      );
+    return(
+        <div 
+          className='cell dead' 
+          id={id} 
+          onClick={()=>{this.props.updateCells(id)}}/>
+    );
+  }
+}
+
+class Cells extends React.Component{
+  
+  updateCells(id){
+    this.props.updateCells(id);
+  }
+  
+  render() {
+    var cells = [];
+    var count = 0;
+    this.props.cellsTable.forEach((state) => {
+      count++;
+      cells.push(<Cell state={state.state} id={count} updateCells={this.updateCells.bind(this)}/>);
+    });
+    
+    return (
+      <div className='cellsContainer'>
+        {cells}
+      </div>
+    );
+  }
+}
+
+class App extends React.Component{
+  
+  constructor(props){
+    super(props);
+    this.state = {
+      h: 40,
+      w: 40,
+      cells:  [],
+      gen: 0,
+      interval: null
+    }
+  }
+  
+  initializer(){
+    var tmpTable = [];
+    for (var i = 0; i < this.state.h; i++){
+      for (var j = 0; j < this.state.w; j++){
+        var r = Math.floor(Math.random() * 2);
+        // var r = 0;
+        tmpTable.push({state: r});
+      }
+    }
+    this.setState({cells: tmpTable});
+  }
+  
+  componentDidMount(){
+    //initialize board
+    this.initializer();
+  }
+  
+ launch(){
+   var interval = setInterval(() => {
+    var newArray = [];
+    var t = this.state.cells;
+    for (var i = 0; i < t.length; i++){
+      //number of neighbours
+      var n = 0;
+      
+      if (i < t.length - 1)
+        if (t[i + 1].state == 1)
+          n++;
+      if (i > 0)
+        if (t[i - 1].state == 1)
+          n++;
+      if (i < t.length - this.state.w)
+        if (t[i + this.state.w].state == 1)
+          n++;
+      if (i > this.state.w)
+        if (t[i - this.state.w].state == 1)
+          n++;
+      
+      //diagonals
+      if (i > this.state.w + 1)
+        if (t[i - this.state.w - 1].state == 1)
+          n++;
+      
+      if (i > this.state.w - 1)
+        if (t[i - this.state.w + 1].state == 1)
+          n++;
+      
+      if (i < t.length - this.state.w - 1)
+        if (t[i + this.state.w + 1].state == 1)
+          n++;
+      
+      if (i < t.length - this.state.w + 1)
+        if (t[i + this.state.w - 1].state == 1)
+          n++;
+      
+      if (t[i].state == 1 && n < 2){
+        newArray.push({state: 0});
+      }
+      if (t[i].state == 1 && (n == 2 || n == 3)){
+        newArray.push({state: 1});
+      }
+      if (t[i].state == 1 && n > 3){
+        newArray.push({state: 0});
+      }
+      if (t[i].state == 0 && n == 3){
+        newArray.push({state: 1});
+      } 
+      if (t[i].state == 0 && n != 3){
+        newArray.push({state: 0});
+      }
+      
+    }
+     this.setState({cells: newArray});
+     this.setState({gen: this.state.gen + 1});
+   }, 100);
+    this.setState({interval: interval});
+  }
+ 
+  stop(){
+    clearInterval(this.state.interval);
+  }
+  
+  updateCells(id){
+    var tmp = this.state.cells;
+    if (tmp[id - 1].state == 1)
+      tmp[id - 1] = {state: 0};
+    else
+      tmp[id - 1] = {state: 1};
+      
+    this.setState({cells: tmp});
+  }
+  
+  clearBoard(){
+    var clean = [];
+    for (var i = 0; i < this.state.cells.length; i++){
+      clean.push({state: 0});
+    }
+    this.setState({cells: clean});
+    console.log('cleared')
+  }
+  
+  render() {
+    return (
+      <div>
+        <div className='board'>
+          <Cells
+            cellsTable={this.state.cells}
+            updateCells={this.updateCells.bind(this)}
+            />
+        </div>
+        <div className='buttonContainer'>
+          <button onClick={this.launch.bind(this)}>Start</button>
+          <button onClick={this.stop.bind(this)}>Stop</button>
+          <button onClick={this.initializer.bind(this)}>Randomize board</button>
+          <button onClick={this.clearBoard.bind(this)}>Clear board</button>
+        </div>
+        <p className='generations'>Generation {this.state.gen}</p>
+       </div>
+    )
+  }
+}
+
+ReactDOM.render(<App />,
+  document.getElementById("game"));
